@@ -1,4 +1,4 @@
-package ru.avdeev.scheduleservice.Controller;
+package ru.avdeev.scheduleservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
