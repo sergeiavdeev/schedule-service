@@ -16,6 +16,7 @@ import java.util.UUID;
 public class CalendarController {
 
     private final CalendarService service;
+
     @GetMapping("{ownerId}")
     public Mono<CalendarDto> getByOwnerId(@PathVariable UUID ownerId) {
         return service.getByOwner(ownerId);
@@ -24,8 +25,7 @@ public class CalendarController {
     @PostMapping("")
     public Mono<CalendarDto> add(@RequestBody CalendarDto calendarDto, @AuthenticationPrincipal Jwt jwt) {
 
-        String userId = jwt.getClaim("sub").toString();
-        calendarDto.setUserId(UUID.fromString(userId));
+        calendarDto.setUserId(UUID.fromString(jwt.getClaim("sub").toString()));
         return service.add(calendarDto);
     }
 }

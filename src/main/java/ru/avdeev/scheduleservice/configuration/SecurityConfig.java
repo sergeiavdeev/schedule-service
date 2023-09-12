@@ -21,7 +21,7 @@ class SecurityConfig {
         http.authorizeExchange((authorize) -> authorize
                         .pathMatchers(HttpMethod.GET, "/v1/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/v1/calendar").hasRole("CALENDAR")
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer((resourceServer) -> resourceServer
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(
