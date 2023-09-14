@@ -9,16 +9,20 @@ import ru.avdeev.scheduleservice.dto.DeviationDto;
 import ru.avdeev.scheduleservice.service.DeviationService;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/deviation")
+@RequestMapping("/v1/calendar")
 @RequiredArgsConstructor
 public class DeviationController {
 
     private final DeviationService service;
 
-    @GetMapping("")
-    public Flux<DeviationDto> getByDate(@RequestParam("start") LocalDate startDate, @RequestParam("end") LocalDate endDate) {
-        return  service.getByDate(startDate, endDate);
+    @GetMapping("{calendarId}/deviation")
+    public Flux<DeviationDto> getByDate(
+            @PathVariable UUID calendarId,
+            @RequestParam("start") LocalDate startDate,
+            @RequestParam("end") LocalDate endDate) {
+        return  service.getByDate(calendarId, startDate, endDate);
     }
 }

@@ -10,6 +10,7 @@ import ru.avdeev.scheduleservice.repository.DeviationRepository;
 import ru.avdeev.scheduleservice.service.DeviationService;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +19,8 @@ public class DeviationServiceImpl implements DeviationService {
     private final DeviationRepository repository;
     private final DeviationMapper mapper;
     @Override
-    public Flux<DeviationDto> getByDate(LocalDate startDate, LocalDate endDate) {
-        return repository.findAllByDateBetweenOrderByDateAscStartTimeAsc(startDate, endDate)
+    public Flux<DeviationDto> getByDate(UUID calendarId, LocalDate startDate, LocalDate endDate) {
+        return repository.findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(calendarId, startDate, endDate)
                 .map(mapper::toDto);
     }
 

@@ -11,5 +11,6 @@ import java.util.UUID;
 @Repository
 public interface DeviationRepository extends ReactiveCrudRepository<Deviation, UUID> {
 
-    Flux<Deviation> findAllByDateBetweenOrderByDateAscStartTimeAsc(LocalDate startDate, LocalDate endDate);
+    Flux<Deviation> findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(
+            UUID calendarId, LocalDate startDate, LocalDate endDate);
 }
