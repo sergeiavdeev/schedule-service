@@ -20,7 +20,7 @@ class SecurityConfig {
 
         http.authorizeExchange((authorize) -> authorize
                         .pathMatchers(HttpMethod.GET, "/v1/**").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/v1/calendar").hasRole("CALENDAR")
+                        .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasRole("CALENDAR")
                         .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer((resourceServer) -> resourceServer
