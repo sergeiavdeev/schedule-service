@@ -16,7 +16,7 @@ public record Schedule(
         UUID calendarId,
 
         @Column("day_of_week")
-        Short dayOfWeek,
+        Integer dayOfWeek,
 
         @Column("start_time")
         LocalTime startTime,

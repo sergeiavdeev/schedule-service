@@ -21,7 +21,7 @@ public class ScheduleDto {
     private UUID id;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private UUID calendarId;
-    private Short dayOfWeek;
+    private Integer dayOfWeek;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private TimeIntervalDto timeInterval;
 

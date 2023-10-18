@@ -1,6 +1,5 @@
 package ru.avdeev.scheduleservice.controller;
 
-import jakarta.ws.rs.QueryParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -23,6 +22,11 @@ public class DeviationController {
             @PathVariable UUID calendarId,
             @RequestParam("start") LocalDate startDate,
             @RequestParam("end") LocalDate endDate) {
-        return  service.getByDate(calendarId, startDate, endDate);
+        return  service.getByDateV2(calendarId, startDate, endDate);
+    }
+
+    @PostMapping("{calendarId}/deviation")
+    public Mono<Void> add(@RequestBody DeviationDto deviation) {
+        return service.add(deviation);
     }
 }

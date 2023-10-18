@@ -14,5 +14,5 @@ public class WorkTimeDto {
 
     private UUID ownerId;
     private UUID calendarId;
-    List<DateWorkTime> dateWorkTimeList;
+    List<DateWorkTimeDto> dateWorkTimeList;
 }

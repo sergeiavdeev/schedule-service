@@ -2,31 +2,55 @@ package ru.avdeev.scheduleservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.DeviationDto;
-import ru.avdeev.scheduleservice.mapper.DeviationMapper;
+import ru.avdeev.scheduleservice.dto.TimeIntervalDto;
+import ru.avdeev.scheduleservice.entity.Deviation;
 import ru.avdeev.scheduleservice.repository.DeviationRepository;
 import ru.avdeev.scheduleservice.service.DeviationService;
 
 import java.time.LocalDate;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class DeviationServiceImpl implements DeviationService {
 
     private final DeviationRepository repository;
-    private final DeviationMapper mapper;
+
     @Override
-    public Flux<DeviationDto> getByDate(UUID calendarId, LocalDate startDate, LocalDate endDate) {
-        return repository.findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(calendarId, startDate, endDate)
-                .map(mapper::toDto);
+    @Transactional
+    public Mono<Void> add(DeviationDto deviation) {
+
+        return repository.deleteByCalendarIdAndDate(deviation.getCalendarId(), deviation.getDate())
+                .then(Flux.fromIterable(deviation.getTimeIntervals())
+                        .map(timeInterval -> new Deviation(
+                                null,
+                                deviation.getCalendarId(),
+                                deviation.getDate(),
+                                timeInterval.getStartTime(),
+                                timeInterval.getEndTime())
+                        ).collectList()
+                        .flatMap(dev -> repository.saveAll(dev).then())
+                );
     }
 
     @Override
-    public Mono<DeviationDto> add(DeviationDto deviation) {
-        return repository.save(mapper.toEntity(deviation))
-                .map(mapper::toDto);
+    public Flux<DeviationDto> getByDateV2(UUID calendarId, LocalDate startDate, LocalDate endDate) {
+
+         return repository.findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(calendarId, startDate, endDate)
+                 .groupBy(Deviation::date)
+                 .flatMap(localDateDeviationGroupedFlux -> localDateDeviationGroupedFlux.collectList()
+                         .map(deviations -> DeviationDto.builder()
+                                 .date(deviations.get(0).date())
+                                 .calendarId(calendarId)
+                                 .timeIntervals(
+                                         deviations.stream()
+                                                 .map(deviation -> new TimeIntervalDto(deviation.startTime(), deviation.endTime()))
+                                                 .toList()
+                                 )
+                                 .build()));
     }
 }

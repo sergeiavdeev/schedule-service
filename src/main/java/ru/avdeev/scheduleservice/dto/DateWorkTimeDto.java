@@ -10,9 +10,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DateWorkTime {
+public class DateWorkTimeDto {
 
     private LocalDate date;
-    private Short dayOfWeek;
+    private Integer dayOfWeek;
     private List<TimeIntervalDto> timeIntervals;
 }

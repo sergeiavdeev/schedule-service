@@ -1,15 +1,17 @@
 package ru.avdeev.scheduleservice.dto;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
+@Builder
 public class DeviationDto {
 
-    private UUID id;
     private UUID calendarId;
     private LocalDate date;
-    private TimeIntervalDto timeInterval;
+    private List<TimeIntervalDto> timeIntervals;
 }

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface DeviationService {
 
-    Flux<DeviationDto> getByDate(UUID calendarId,LocalDate startDate, LocalDate endDate);
-    Mono<DeviationDto> add(DeviationDto deviation);
+    Mono<Void> add(DeviationDto deviation);
+
+    Flux<DeviationDto> getByDateV2(UUID calendarId, LocalDate startDate, LocalDate endDate);
 }
