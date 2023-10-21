@@ -13,5 +13,4 @@ public interface CalendarService {
 
     Mono<CalendarDto> add(CalendarDto calendarDto);
 
-    Mono<WorkTimeDto> getWorkTime(UUID ownerId, LocalDate startDate, LocalDate endDate);
 }

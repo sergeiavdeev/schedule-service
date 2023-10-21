@@ -6,10 +6,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.CalendarDto;
-import ru.avdeev.scheduleservice.dto.WorkTimeDto;
 import ru.avdeev.scheduleservice.service.CalendarService;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -19,8 +17,8 @@ public class CalendarController {
 
     private final CalendarService service;
 
-    @GetMapping("{ownerId}")
-    public Mono<CalendarDto> getByOwnerId(@PathVariable UUID ownerId) {
+    @GetMapping("")
+    public Mono<CalendarDto> getByOwnerId(@RequestParam(name = "owner") UUID ownerId) {
         return service.getByOwner(ownerId);
     }
 
@@ -29,12 +27,5 @@ public class CalendarController {
 
         calendarDto.setUserId(UUID.fromString(jwt.getClaim("sub").toString()));
         return service.add(calendarDto);
-    }
-
-    @GetMapping("{ownerId}/work-time")
-    public Mono<WorkTimeDto> getWorkTime(
-            @PathVariable UUID ownerId, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
-
-        return service.getWorkTime(ownerId, startDate, endDate);
     }
 }

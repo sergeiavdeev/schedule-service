@@ -13,6 +13,5 @@ import java.util.UUID;
 public class WorkTimeDto {
 
     private UUID ownerId;
-    private UUID calendarId;
     List<DateWorkTimeDto> dateWorkTimeList;
 }
