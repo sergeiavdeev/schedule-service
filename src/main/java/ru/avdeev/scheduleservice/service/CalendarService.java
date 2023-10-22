@@ -1,5 +1,6 @@
 package ru.avdeev.scheduleservice.service;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.CalendarDto;
 import ru.avdeev.scheduleservice.dto.WorkTimeDto;
@@ -13,4 +14,5 @@ public interface CalendarService {
 
     Mono<CalendarDto> add(CalendarDto calendarDto);
 
+    Flux<CalendarDto> getAllByOwner(UUID ownerId, LocalDate startDate);
 }
