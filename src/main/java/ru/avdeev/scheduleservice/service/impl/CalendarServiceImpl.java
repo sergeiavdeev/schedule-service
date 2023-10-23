@@ -1,13 +1,11 @@
 package ru.avdeev.scheduleservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.relational.core.query.CriteriaDefinition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.*;
-import ru.avdeev.scheduleservice.entity.Calendar;
 import ru.avdeev.scheduleservice.mapper.CalendarMapper;
 import ru.avdeev.scheduleservice.repository.CalendarRepository;
 import ru.avdeev.scheduleservice.service.CalendarService;

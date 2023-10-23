@@ -22,7 +22,7 @@ public class DeviationController {
             @PathVariable UUID calendarId,
             @RequestParam("start") LocalDate startDate,
             @RequestParam("end") LocalDate endDate) {
-        return  service.getByDateV2(calendarId, startDate, endDate);
+        return  service.getByDateInterval(calendarId, startDate, endDate);
     }
 
     @PostMapping("{calendarId}/deviation")

@@ -38,7 +38,7 @@ public class DeviationServiceImpl implements DeviationService {
     }
 
     @Override
-    public Flux<DeviationDto> getByDateV2(UUID calendarId, LocalDate startDate, LocalDate endDate) {
+    public Flux<DeviationDto> getByDateInterval(UUID calendarId, LocalDate startDate, LocalDate endDate) {
 
          return repository.findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(calendarId, startDate, endDate)
                  .groupBy(Deviation::date)

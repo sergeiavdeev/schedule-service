@@ -11,5 +11,5 @@ public interface DeviationService {
 
     Mono<Void> add(DeviationDto deviation);
 
-    Flux<DeviationDto> getByDateV2(UUID calendarId, LocalDate startDate, LocalDate endDate);
+    Flux<DeviationDto> getByDateInterval(UUID calendarId, LocalDate startDate, LocalDate endDate);
 }

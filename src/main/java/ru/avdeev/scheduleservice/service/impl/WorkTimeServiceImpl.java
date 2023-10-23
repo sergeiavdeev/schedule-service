@@ -23,7 +23,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
     @Override
     public Mono<WorkTimeDto> getWorkTime(UUID ownerId, LocalDate startDate, LocalDate endDate) {
         return calendarService.getByOwner(ownerId)
-                .flatMap(calendarDto -> deviationService.getByDateV2(calendarDto.getId(), startDate, endDate)
+                .flatMap(calendarDto -> deviationService.getByDateInterval(calendarDto.getId(), startDate, endDate)
                         .collectList()
                         .zipWith(Mono.just(calendarDto)))
                 .flatMap(t -> getWorkTimeWithDeviations(t.getT2(), t.getT1(), startDate, endDate));
