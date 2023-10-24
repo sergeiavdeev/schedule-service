@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.*;
+import ru.avdeev.scheduleservice.exception.ResourceNotFoundException;
 import ru.avdeev.scheduleservice.service.CalendarService;
 import ru.avdeev.scheduleservice.service.DeviationService;
 import ru.avdeev.scheduleservice.service.WorkTimeService;
@@ -34,6 +35,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
         return calendarService.getAllByOwner(ownerId, startDate)
                 .filter(calendarDto ->
                         calendarDto.getStartDate().isBefore(endDate) || calendarDto.getStartDate().isEqual(endDate))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Not calendars found by owner id: %s", ownerId)))
                 .flatMap(calendarDto -> deviationService.getByDateInterval(calendarDto.getId(), startDate, endDate)
                         .collectList()
                         .zipWith(Mono.just(calendarDto)))

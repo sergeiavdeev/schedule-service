@@ -10,9 +10,10 @@ import ru.avdeev.scheduleservice.dto.TimeIntervalDto;
 import ru.avdeev.scheduleservice.entity.Deviation;
 import ru.avdeev.scheduleservice.repository.DeviationRepository;
 import ru.avdeev.scheduleservice.service.DeviationService;
+import ru.avdeev.scheduleservice.utils.DateUtils;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class DeviationServiceImpl implements DeviationService {
     @Transactional
     public Mono<Void> add(DeviationDto deviation, UUID calendarId) {
 
-
+        DateUtils.checkIntervals(deviation.getTimeIntervals());
 
         return repository.deleteByCalendarIdAndDate(calendarId, deviation.getDate())
                 .then(Flux.fromIterable(deviation.getTimeIntervals())

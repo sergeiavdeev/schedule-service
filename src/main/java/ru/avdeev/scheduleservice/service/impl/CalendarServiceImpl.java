@@ -27,12 +27,6 @@ public class CalendarServiceImpl implements CalendarService {
     private final CalendarMapper mapper;
 
     private final ScheduleService scheduleService;
-    @Override
-    public Mono<CalendarDto> getByOwner(UUID ownerId) {
-        return repository.findTop1ByOwnerIdOrderByStartDateDesc(ownerId)
-                .map(mapper::toDto)
-                .flatMap(this::setSchedules);
-    }
 
     @Override
     public Flux<CalendarDto> getAllByOwner(UUID ownerId, LocalDate startDate) {
