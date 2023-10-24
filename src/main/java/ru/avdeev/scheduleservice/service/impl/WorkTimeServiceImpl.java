@@ -11,8 +11,10 @@ import ru.avdeev.scheduleservice.service.WorkTimeService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -20,13 +22,37 @@ public class WorkTimeServiceImpl implements WorkTimeService {
 
     private final CalendarService calendarService;
     private final DeviationService deviationService;
+
     @Override
     public Mono<WorkTimeDto> getWorkTime(UUID ownerId, LocalDate startDate, LocalDate endDate) {
-        return calendarService.getByOwner(ownerId)
+
+        Comparator<CalendarDto> dateComparator = Comparator
+                .comparing(CalendarDto::getStartDate, Comparator.reverseOrder());
+
+        AtomicReference<LocalDate> lEndDate = new AtomicReference<>(endDate);
+
+        return calendarService.getAllByOwner(ownerId, startDate)
+                .filter(calendarDto -> calendarDto.getStartDate().isBefore(endDate) || calendarDto.getStartDate().isEqual(endDate))
                 .flatMap(calendarDto -> deviationService.getByDateInterval(calendarDto.getId(), startDate, endDate)
                         .collectList()
                         .zipWith(Mono.just(calendarDto)))
-                .flatMap(t -> getWorkTimeWithDeviations(t.getT2(), t.getT1(), startDate, endDate));
+                .sort((s1, s2) -> dateComparator.compare(s1.getT2(), s2.getT2()))
+                .flatMap(cwd -> {
+                    CalendarDto calendar = cwd.getT2();
+                    List<DeviationDto> deviations = cwd.getT1();
+
+                    LocalDate lStartDate = startDate;
+                    if (calendar.getStartDate().isAfter(startDate)) {
+                        lStartDate = calendar.getStartDate();
+                    }
+                    Mono<WorkTimeDto> wt = getWorkTimeWithDeviations(calendar, deviations, lStartDate, lEndDate.get());
+                    lEndDate.set(lStartDate.minusDays(1));
+                    return wt;
+                })
+                .flatMap(workTimeDto -> Flux.fromIterable(workTimeDto.getDateWorkTimeList()))
+                .sort(Comparator.comparing(DateWorkTimeDto::getDate))
+                .collectList()
+                .map(dateWorkTimeList -> new WorkTimeDto(ownerId, dateWorkTimeList));
     }
 
     private Mono<WorkTimeDto> getWorkTimeWithDeviations(

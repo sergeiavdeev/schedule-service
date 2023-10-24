@@ -22,13 +22,15 @@ public class DeviationServiceImpl implements DeviationService {
 
     @Override
     @Transactional
-    public Mono<Void> add(DeviationDto deviation) {
+    public Mono<Void> add(DeviationDto deviation, UUID calendarId) {
 
-        return repository.deleteByCalendarIdAndDate(deviation.getCalendarId(), deviation.getDate())
+
+
+        return repository.deleteByCalendarIdAndDate(calendarId, deviation.getDate())
                 .then(Flux.fromIterable(deviation.getTimeIntervals())
                         .map(timeInterval -> new Deviation(
                                 null,
-                                deviation.getCalendarId(),
+                                calendarId,
                                 deviation.getDate(),
                                 timeInterval.getStartTime(),
                                 timeInterval.getEndTime())

@@ -26,7 +26,8 @@ public class DeviationController {
     }
 
     @PostMapping("{calendarId}/deviation")
-    public Mono<Void> add(@RequestBody DeviationDto deviation) {
-        return service.add(deviation);
+    public Mono<Void> add(@RequestBody DeviationDto deviation, @PathVariable UUID calendarId) {
+        //deviation.setCalendarId(calendarId);
+        return service.add(deviation, calendarId);
     }
 }
