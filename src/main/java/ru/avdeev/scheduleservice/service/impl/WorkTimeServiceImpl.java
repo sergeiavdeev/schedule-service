@@ -32,14 +32,15 @@ public class WorkTimeServiceImpl implements WorkTimeService {
         AtomicReference<LocalDate> lEndDate = new AtomicReference<>(endDate);
 
         return calendarService.getAllByOwner(ownerId, startDate)
-                .filter(calendarDto -> calendarDto.getStartDate().isBefore(endDate) || calendarDto.getStartDate().isEqual(endDate))
+                .filter(calendarDto ->
+                        calendarDto.getStartDate().isBefore(endDate) || calendarDto.getStartDate().isEqual(endDate))
                 .flatMap(calendarDto -> deviationService.getByDateInterval(calendarDto.getId(), startDate, endDate)
                         .collectList()
                         .zipWith(Mono.just(calendarDto)))
                 .sort((s1, s2) -> dateComparator.compare(s1.getT2(), s2.getT2()))
-                .flatMap(cwd -> {
-                    CalendarDto calendar = cwd.getT2();
-                    List<DeviationDto> deviations = cwd.getT1();
+                .flatMap(t2 -> {
+                    CalendarDto calendar = t2.getT2();
+                    List<DeviationDto> deviations = t2.getT1();
 
                     LocalDate lStartDate = startDate;
                     if (calendar.getStartDate().isAfter(startDate)) {
@@ -55,8 +56,8 @@ public class WorkTimeServiceImpl implements WorkTimeService {
                 .map(dateWorkTimeList -> new WorkTimeDto(ownerId, dateWorkTimeList));
     }
 
-    private Mono<WorkTimeDto> getWorkTimeWithDeviations(
-            CalendarDto calendar, List<DeviationDto> deviations, LocalDate startDate, LocalDate endDate) {
+    private Mono<WorkTimeDto> getWorkTimeWithDeviations(CalendarDto calendar, List<DeviationDto> deviations,
+                                                        LocalDate startDate, LocalDate endDate) {
 
         WorkTimeDto workTime = new WorkTimeDto(calendar.getOwnerId(), new ArrayList<>());
 
@@ -70,7 +71,8 @@ public class WorkTimeServiceImpl implements WorkTimeService {
                 });
     }
 
-    private DateWorkTimeDto setTimeIntervals(DateWorkTimeDto dateWorkTime, CalendarDto calendar, List<DeviationDto> deviations) {
+    private DateWorkTimeDto setTimeIntervals(DateWorkTimeDto dateWorkTime, CalendarDto calendar,
+                                             List<DeviationDto> deviations) {
 
         DeviationDto deviationByDate = deviations.stream()
                 .filter(deviation -> deviation.getDate().equals(dateWorkTime.getDate()))
