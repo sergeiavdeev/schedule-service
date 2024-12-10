@@ -11,5 +11,4 @@ class ScheduleServiceApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }
