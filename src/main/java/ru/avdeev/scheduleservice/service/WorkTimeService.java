@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface WorkTimeService {
 
     Mono<WorkTimeDto> getWorkTime(UUID ownerId, LocalDate startDate, LocalDate endDate);
+    Mono<WorkTimeDto> getFreeWorkTime(UUID storageId, UUID resourceId, LocalDate startDate);
 }

@@ -21,4 +21,11 @@ public class WorkTimeController {
 
         return service.getWorkTime(ownerId, startDate, endDate);
     }
+
+    @GetMapping("/free")
+    public Mono<WorkTimeDto> getFreeWorkTime(@RequestParam(name = "storage") UUID storageId,
+                                             @RequestParam(name = "resource") UUID resourceId,
+                                             @RequestParam LocalDate date) {
+        return service.getFreeWorkTime(storageId, resourceId, date);
+    }
 }
