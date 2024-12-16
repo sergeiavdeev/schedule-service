@@ -10,6 +10,12 @@ services:
       spring.profiles.active: ${PROFILE}
     networks:
       - ttc-tops
+    deploy:
+      resources:
+        limits:
+          memory: '512M'
+        reservations:
+          memory: '256M'
 networks:
   ttc-tops:
     external: true
