@@ -10,5 +10,7 @@ import java.util.UUID;
 public interface OrderService {
     Mono<OrderDto> save(OrderDto orderDto);
     Flux<OrderDto> findAll();
-    Flux<OrderDto> findByResourceIdAndDate(UUID resourceId, LocalDate date);
+    Flux<OrderDto> findByUser(UUID userId);
+    Flux<OrderDto> findAllAfterCurrentDate();
+
 }

@@ -5,6 +5,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -26,5 +27,8 @@ public record Order(
         LocalTime startTime,
 
         @Column("end_time")
-        LocalTime endTime
+        LocalTime endTime,
+
+        @Column("created_at")
+        LocalDateTime createdAt
 ) {}
