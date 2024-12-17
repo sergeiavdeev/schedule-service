@@ -41,7 +41,7 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, UUID> {
         select *
         from booking
         where
-            booking_date >= current_date and
+            booking_date >= date(timezone('UTC+03', now()::timestamp)) and
             user_id = :userId
         order by booking_date, start_time
     """;
@@ -49,7 +49,7 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, UUID> {
     String adminQuery = """    
         select * from booking
         where
-            booking_date >= current_date and
+            booking_date >= date(timezone('UTC+03', now()::timestamp)) and
             user_id in (:userIds)
         order by booking_date, start_time
     """;
