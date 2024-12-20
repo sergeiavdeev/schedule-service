@@ -20,7 +20,7 @@ class SecurityConfig {
 
         http.authorizeExchange((authorize) -> authorize
                         .pathMatchers(HttpMethod.GET, "/v1/**").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasRole("CALENDAR")
+                        .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasAnyRole("CALENDAR", "ADMIN")
                         .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer((resourceServer) -> resourceServer
@@ -39,6 +39,7 @@ class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setPrincipalClaimName("preferred_username");
         converter.setJwtGrantedAuthoritiesConverter(jwt -> jwt.getClaimAsStringList("spring_roles").stream()
+                .map(String::toUpperCase)
                 .map(SimpleGrantedAuthority::new)
                 .map(GrantedAuthority.class::cast)
                 .toList()
