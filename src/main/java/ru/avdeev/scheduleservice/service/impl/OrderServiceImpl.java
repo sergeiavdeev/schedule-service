@@ -9,12 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.DateWorkTimeDto;
+import ru.avdeev.scheduleservice.dto.DebtDto;
 import ru.avdeev.scheduleservice.dto.OrderDto;
 import ru.avdeev.scheduleservice.dto.UserDto;
 import ru.avdeev.scheduleservice.exception.InvalidTimeIntervalException;
+import ru.avdeev.scheduleservice.mapper.DebtMapper;
 import ru.avdeev.scheduleservice.mapper.OrderMapper;
 import ru.avdeev.scheduleservice.repository.OrderRepository;
+import ru.avdeev.scheduleservice.service.DebtService;
 import ru.avdeev.scheduleservice.service.OrderService;
+import ru.avdeev.scheduleservice.service.PriceService;
 import ru.avdeev.scheduleservice.service.WorkTimeService;
 
 import java.util.List;
@@ -25,13 +29,25 @@ import java.util.UUID;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
+    private final DebtService debtService;
+    private final PriceService priceService;
     private final OrderMapper orderMapper;
+    private final DebtMapper debtMapper;
     private final WorkTimeService workTimeService;
     private final Keycloak keycloak;
 
     @Override
     @Transactional
     public Mono<OrderDto> save(OrderDto orderDto) {
+
+        if (orderDto.getStartTime().isAfter(orderDto.getEndTime()) ||
+                orderDto.getStartTime().equals(orderDto.getEndTime())) {
+            String msg = String.format("Дата начала интервала %s должна быть меньше даты окончания %s",
+                    orderDto.getStartTime(),
+                    orderDto.getEndTime()
+            );
+            throw new InvalidTimeIntervalException(msg);
+        }
 
         return isWorkTime(orderDto)
                 .flatMap(isWorkTime -> {
@@ -50,7 +66,8 @@ public class OrderServiceImpl implements OrderService {
                                     throw new InvalidTimeIntervalException(msg);
                                 })
                                 .switchIfEmpty(orderRepository.save(orderMapper.toEntity(orderDto)))
-                                .map(orderMapper::toDto);
+                                .map(orderMapper::toDto)
+                                .flatMap(this::saveDebt);
                     }
                     String msg = String.format("Желаемое время не соответствует рабочему времени: %s - %s",
                             orderDto.getStartTime(),
@@ -85,11 +102,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Flux<OrderDto> findByUser(UUID userId) {
         return orderRepository.findByUser(userId)
-                .map(orderMapper::toDto);
+                .map(orderMapper::toDto)
+                .flatMapSequential(this::setDebt)
+                .flatMapSequential(this::setAmount);
     }
 
     @Override
-    @RolesAllowed("ROLE_ADMIN")
     public Flux<OrderDto> findAllAfterCurrentDate() {
 
         List<UserRepresentation> users = keycloak.realm("ttc-tops").users().list();
@@ -112,7 +130,22 @@ public class OrderServiceImpl implements OrderService {
                                     ));
                             return orderDto;
                         }
-                );
+                )
+                .flatMapSequential(this::setDebt)
+                .flatMapSequential(this::setAmount);
+    }
+
+    @Override
+    @Transactional
+    public Mono<Void> deleteById(UUID id) {
+        return orderRepository.deleteById(id)
+                .then(debtService.deleteByOrderId(id));
+    }
+
+    @Override
+    public Mono<DebtDto> pay(UUID orderId, Double sum) {
+        return debtService.saveDebt(orderId, 0D, sum)
+                .map(debtMapper::toDto);
     }
 
     private Mono<Boolean> isWorkTime(OrderDto order) {
@@ -131,6 +164,34 @@ public class OrderServiceImpl implements OrderService {
                         );
                     }
                     return isWorkTime;
+                });
+    }
+
+    private Mono<OrderDto> saveDebt(OrderDto orderDto) {
+
+        return priceService.getAmount(orderDto.getResourceId(), orderDto.getCount())
+                .flatMap(amount -> debtService.saveDebt(orderDto.getId(), amount, 0D))
+                .map(debt -> {
+                    orderDto.setAmount(debt.dt());
+                    return orderDto;
+                });
+    }
+
+    private Mono<OrderDto> setDebt(OrderDto orderDto) {
+
+        return debtService.getDebt(orderDto.getId())
+                .map(debt -> {
+                    orderDto.setDebt(debt);
+                    return orderDto;
+                });
+    }
+
+    private Mono<OrderDto> setAmount(OrderDto orderDto) {
+
+        return debtService.getAmount(orderDto.getId())
+                .map(amount -> {
+                    orderDto.setAmount(amount);
+                    return orderDto;
                 });
     }
 }

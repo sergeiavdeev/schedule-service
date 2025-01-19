@@ -19,8 +19,10 @@ class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
 
         http.authorizeExchange((authorize) -> authorize
-                        .pathMatchers(HttpMethod.GET, "/v1/**").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasAnyRole("CALENDAR", "ADMIN")
+                        .pathMatchers(HttpMethod.GET, "/v1/order/?admin=1").hasAnyRole("OWNER", "ADMIN")
+                        .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasAnyRole("OWNER", "ADMIN")
+                        .pathMatchers(HttpMethod.DELETE, "/v1/order/**").hasAnyRole("OWNER", "ADMIN")
+                        .pathMatchers(HttpMethod.POST, "/v1/order/pay").hasAnyRole("OWNER", "ADMIN")
                         .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer((resourceServer) -> resourceServer
