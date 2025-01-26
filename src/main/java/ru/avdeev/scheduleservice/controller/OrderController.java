@@ -37,8 +37,9 @@ public class OrderController {
     }
 
     @GetMapping("/price")
-    public Mono<Double> getPrice(@RequestParam UUID resourceId, @RequestParam Double count) {
-        return priceService.getAmount(resourceId, count);
+    public Mono<String> getPrice(@RequestParam UUID resourceId, @RequestParam Double count) {
+        return priceService.getAmount(resourceId, count)
+                .map(amount -> String.format("%.0f", amount));
     }
 
     @PostMapping("")
