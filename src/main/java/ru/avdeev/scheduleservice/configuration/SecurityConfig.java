@@ -21,7 +21,7 @@ class SecurityConfig {
         http.authorizeExchange((authorize) -> authorize
                         .pathMatchers(HttpMethod.GET, "/v1/order/?admin=1").hasAnyRole("OWNER", "ADMIN")
                         .pathMatchers(HttpMethod.POST, "/v1/calendar/**").hasAnyRole("OWNER", "ADMIN")
-                        .pathMatchers(HttpMethod.DELETE, "/v1/order/**").hasAnyRole("OWNER", "ADMIN")
+                        .pathMatchers(HttpMethod.DELETE, "/v1/order/**").hasAnyRole("OWNER", "ADMIN", "USER")
                         .pathMatchers(HttpMethod.POST, "/v1/order/pay").hasAnyRole("OWNER", "ADMIN")
                         .anyExchange().permitAll()
                 )
