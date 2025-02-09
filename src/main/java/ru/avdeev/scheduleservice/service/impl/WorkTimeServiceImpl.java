@@ -2,6 +2,8 @@ package ru.avdeev.scheduleservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.*;
@@ -12,6 +14,7 @@ import ru.avdeev.scheduleservice.service.CalendarService;
 import ru.avdeev.scheduleservice.service.DeviationService;
 import ru.avdeev.scheduleservice.service.WorkTimeService;
 
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -64,6 +67,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Mono<WorkTimeDto> getFreeWorkTime(UUID storageId, UUID resourceId, LocalDate date) {
         return getWorkTime(storageId, date, date)
                 .map(workTimeDto -> workTimeDto.getDateWorkTimeList().getFirst().getTimeIntervals())

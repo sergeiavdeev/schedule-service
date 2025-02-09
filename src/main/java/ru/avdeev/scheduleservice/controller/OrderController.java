@@ -7,11 +7,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ru.avdeev.scheduleservice.configuration.RabbitConfig;
 import ru.avdeev.scheduleservice.dto.DebtDto;
 import ru.avdeev.scheduleservice.dto.OrderDto;
 import ru.avdeev.scheduleservice.exception.ApiException;
 import ru.avdeev.scheduleservice.service.OrderService;
 import ru.avdeev.scheduleservice.service.PriceService;
+import ru.avdeev.scheduleservice.service.impl.MessageService;
 
 import java.util.UUID;
 
@@ -22,6 +24,7 @@ public class OrderController {
 
     private final OrderService orderService;
     private final PriceService priceService;
+    private final MessageService messageService;
 
     @GetMapping("")
     public Flux<OrderDto> getOrders(@RequestParam boolean admin, @AuthenticationPrincipal Jwt jwt) {
@@ -46,16 +49,23 @@ public class OrderController {
     public Mono<OrderDto> createOrder(@RequestBody OrderDto orderDto, @AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getClaim("sub").toString());
         orderDto.setUserId(userId);
-        return orderService.save(orderDto);
+        return orderService.save(orderDto)
+                .flatMap(order -> messageService.send("BookingCreated", RabbitConfig.BOOKING_EXCHANGE, order))
+                .map(o -> (OrderDto) o);
     }
 
     @PostMapping("/pay")
     public Mono<DebtDto> pay(@RequestBody DebtDto debt) {
-        return orderService.pay(debt.getOrderId(), debt.getKt());
+        return orderService.pay(debt.getOrderId(), debt.getKt())
+                .flatMap(debtDto -> messageService.send("OrderPayed", RabbitConfig.BOOKING_EXCHANGE, debtDto))
+                .map(o -> (DebtDto) o);
     }
 
     @DeleteMapping
-    public Mono<Void> deleteOrder(@RequestBody OrderDto orderDto) {
-        return orderService.deleteById(orderDto.getId());
+    public Mono<OrderDto> deleteOrder(@RequestBody OrderDto orderDto) {
+        return orderService.findById(orderDto.getId())
+                .zipWith(orderService.deleteById(orderDto.getId()))
+                .flatMap(t -> messageService.send("BookingCanceled", RabbitConfig.BOOKING_EXCHANGE, t.getT1()))
+                .map(o -> (OrderDto) o);
     }
 }

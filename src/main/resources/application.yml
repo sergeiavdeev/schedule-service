@@ -6,9 +6,3 @@ spring:
   cloud:
     config:
       fail-fast: true
-keycloak:
-  uri: https://avdeev-sa.ru/keycloak
-  realm: ttc-tops
-  username: admin
-  password: 61Ifhjukjn
-  clientId: admin-cli

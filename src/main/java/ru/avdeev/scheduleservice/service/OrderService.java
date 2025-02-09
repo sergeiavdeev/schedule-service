@@ -10,8 +10,9 @@ import java.util.UUID;
 public interface OrderService {
     Mono<OrderDto> save(OrderDto orderDto);
     Flux<OrderDto> findAll();
+    Mono<OrderDto> findById(UUID id);
     Flux<OrderDto> findByUser(UUID userId);
     Flux<OrderDto> findAllAfterCurrentDate();
-    Mono<Void> deleteById(UUID id);
+    Mono<UUID> deleteById(UUID id);
     Mono<DebtDto> pay(UUID orderId, Double sum);
 }

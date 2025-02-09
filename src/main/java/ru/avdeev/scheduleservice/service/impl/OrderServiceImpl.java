@@ -1,6 +1,6 @@
 package ru.avdeev.scheduleservice.service.impl;
 
-import jakarta.annotation.security.RolesAllowed;
+
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -8,10 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import ru.avdeev.scheduleservice.dto.DateWorkTimeDto;
-import ru.avdeev.scheduleservice.dto.DebtDto;
-import ru.avdeev.scheduleservice.dto.OrderDto;
-import ru.avdeev.scheduleservice.dto.UserDto;
+import ru.avdeev.scheduleservice.dto.*;
 import ru.avdeev.scheduleservice.exception.InvalidTimeIntervalException;
 import ru.avdeev.scheduleservice.mapper.DebtMapper;
 import ru.avdeev.scheduleservice.mapper.OrderMapper;
@@ -21,8 +18,7 @@ import ru.avdeev.scheduleservice.service.OrderService;
 import ru.avdeev.scheduleservice.service.PriceService;
 import ru.avdeev.scheduleservice.service.WorkTimeService;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +31,7 @@ public class OrderServiceImpl implements OrderService {
     private final DebtMapper debtMapper;
     private final WorkTimeService workTimeService;
     private final Keycloak keycloak;
+    //private final MessageService messageService;
 
     @Override
     @Transactional
@@ -67,12 +64,15 @@ public class OrderServiceImpl implements OrderService {
                                 })
                                 .switchIfEmpty(orderRepository.save(orderMapper.toEntity(orderDto)))
                                 .map(orderMapper::toDto)
-                                .flatMap(this::saveDebt);
+                                .flatMap(this::saveDebt)
+                                //.flatMap(order -> messageService.send("BookingCreated", "exch.booking", order))
+                                //.map(o -> (OrderDto) o)
+                                ;
                     }
                     String msg = String.format("Желаемое время не соответствует рабочему времени: %s - %s",
                             orderDto.getStartTime(),
                             orderDto.getEndTime()
-                    );
+                        );
                     return Mono.error(new InvalidTimeIntervalException(msg));
                 });
     }
@@ -97,6 +97,12 @@ public class OrderServiceImpl implements OrderService {
                             return orderDto;
                         }
                 );
+    }
+
+    @Override
+    public Mono<OrderDto> findById(UUID id) {
+        return orderRepository.findById(id)
+                .map(orderMapper::toDto);
     }
 
     @Override
@@ -137,9 +143,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Mono<Void> deleteById(UUID id) {
+    public Mono<UUID> deleteById(UUID id) {
         return orderRepository.deleteById(id)
-                .then(debtService.deleteByOrderId(id));
+                .then(debtService.deleteByOrderId(id))
+                .then(Mono.just(id));
     }
 
     @Override
