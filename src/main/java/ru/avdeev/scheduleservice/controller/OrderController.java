@@ -2,6 +2,7 @@ package ru.avdeev.scheduleservice.controller;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/v1/order")
 @RequiredArgsConstructor
+@Slf4j
 public class OrderController {
 
     private final OrderService orderService;
@@ -47,6 +49,7 @@ public class OrderController {
 
     @PostMapping("")
     public Mono<OrderDto> createOrder(@RequestBody OrderDto orderDto, @AuthenticationPrincipal Jwt jwt) {
+        log.info("Receive request: {}", orderDto);
         UUID userId = UUID.fromString(jwt.getClaim("sub").toString());
         orderDto.setUserId(userId);
         return orderService.save(orderDto)
