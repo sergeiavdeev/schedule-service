@@ -13,6 +13,8 @@ import ru.avdeev.scheduleservice.service.DeviationService;
 import ru.avdeev.scheduleservice.utils.DateUtils;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,13 +26,13 @@ public class DeviationServiceImpl implements DeviationService {
 
     @Override
     @Transactional
-    public Mono<Void> add(DeviationDto deviation, UUID calendarId) {
+    public Mono<DeviationDto> add(DeviationDto deviation, UUID calendarId) {
 
         DateUtils.checkIntervals(deviation.getTimeIntervals());
 
         return repository.deleteByCalendarIdAndDate(calendarId, deviation.getDate())
                 .then(Flux.fromIterable(deviation.getTimeIntervals())
-                        .switchIfEmpty(Flux.fromIterable(List.of(new TimeIntervalDto(null, null)))
+                        .switchIfEmpty(Flux.fromIterable(List.of(new TimeIntervalDto(LocalTime.MIN, LocalTime.MIN)))
                         )
                         .map(timeInterval -> new Deviation(
                                 null,
@@ -39,13 +41,32 @@ public class DeviationServiceImpl implements DeviationService {
                                 timeInterval.getStartTime(),
                                 timeInterval.getEndTime())
                         ).collectList()
-                        .flatMap(dev -> repository.saveAll(dev).then())
-                );
+                        .flatMap(dev -> repository.saveAll(dev)
+                                .collectList()
+                                .map(devList -> {
+                                    List<TimeIntervalDto> intervals = new ArrayList<>();
+                                    for (Deviation el : devList) {
+                                        intervals.add(new TimeIntervalDto(el.startTime(), el.endTime()));
+                                    }
+                                    return DeviationDto.builder()
+                                            .id(devList.getFirst().id())
+                                            .calendarId(calendarId)
+                                            .date(devList.getFirst().date())
+                                            .timeIntervals(intervals)
+                                            .build();
+                                }))
+                )
+                ;
     }
 
     @Override
     public Mono<Void> delete(UUID id) {
         return repository.deleteById(id);
+    }
+
+    @Override
+    public Mono<Void> delete(UUID calendarId, LocalDate date) {
+        return repository.deleteByCalendarIdAndDate(calendarId, date);
     }
 
     @Override
@@ -55,7 +76,6 @@ public class DeviationServiceImpl implements DeviationService {
                  .groupBy(Deviation::date)
                  .flatMap(localDateDeviationGroupedFlux -> localDateDeviationGroupedFlux.collectList()
                          .map(deviations -> DeviationDto.builder()
-                                 .id(deviations.getFirst().id())
                                  .date(deviations.getFirst().date())
                                  .calendarId(calendarId)
                                  .timeIntervals(

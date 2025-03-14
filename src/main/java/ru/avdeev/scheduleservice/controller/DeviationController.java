@@ -32,12 +32,12 @@ public class DeviationController {
     }
 
     @PostMapping("{calendarId}/deviation")
-    public Mono<Void> add(@RequestBody DeviationDto deviation, @PathVariable UUID calendarId) {
+    public Mono<DeviationDto> add(@RequestBody DeviationDto deviation, @PathVariable UUID calendarId) {
         return service.add(deviation, calendarId);
     }
 
-    @DeleteMapping("/deviation/{id}")
-    public Mono<Void> delete(@PathVariable UUID id) {
-        return service.delete(id);
+    @DeleteMapping("{calendarId}/deviation/{date}")
+    public Mono<Void> delete(@PathVariable UUID calendarId, @PathVariable LocalDate date) {
+        return service.delete(calendarId, date);
     }
 }
