@@ -10,7 +10,7 @@ import java.util.UUID;
 @Data
 @Builder
 public class DeviationDto {
-
+    private UUID id;
     private UUID calendarId;
     private LocalDate date;
     private List<TimeIntervalDto> timeIntervals;

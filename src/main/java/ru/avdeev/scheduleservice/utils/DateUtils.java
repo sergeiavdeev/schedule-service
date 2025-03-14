@@ -11,7 +11,7 @@ public class DateUtils {
 
     public static void checkInterval(LocalTime startTime, LocalTime endTime) {
 
-        if (startTime.isAfter(endTime) || startTime.equals(endTime)) {
+        if (startTime.isAfter(endTime)) {
             throw new InvalidTimeIntervalException("Invalid time interval: %s - %s", startTime, endTime);
         }
     }

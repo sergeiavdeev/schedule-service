@@ -13,6 +13,7 @@ import ru.avdeev.scheduleservice.service.DeviationService;
 import ru.avdeev.scheduleservice.utils.DateUtils;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +30,8 @@ public class DeviationServiceImpl implements DeviationService {
 
         return repository.deleteByCalendarIdAndDate(calendarId, deviation.getDate())
                 .then(Flux.fromIterable(deviation.getTimeIntervals())
+                        .switchIfEmpty(Flux.fromIterable(List.of(new TimeIntervalDto(null, null)))
+                        )
                         .map(timeInterval -> new Deviation(
                                 null,
                                 calendarId,
@@ -41,13 +44,19 @@ public class DeviationServiceImpl implements DeviationService {
     }
 
     @Override
+    public Mono<Void> delete(UUID id) {
+        return repository.deleteById(id);
+    }
+
+    @Override
     public Flux<DeviationDto> getByDateInterval(UUID calendarId, LocalDate startDate, LocalDate endDate) {
 
          return repository.findAllByCalendarIdAndDateBetweenOrderByDateAscStartTimeAsc(calendarId, startDate, endDate)
                  .groupBy(Deviation::date)
                  .flatMap(localDateDeviationGroupedFlux -> localDateDeviationGroupedFlux.collectList()
                          .map(deviations -> DeviationDto.builder()
-                                 .date(deviations.get(0).date())
+                                 .id(deviations.getFirst().id())
+                                 .date(deviations.getFirst().date())
                                  .calendarId(calendarId)
                                  .timeIntervals(
                                          deviations.stream()

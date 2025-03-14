@@ -20,14 +20,24 @@ public class DeviationController {
     @GetMapping("{calendarId}/deviation")
     public Flux<DeviationDto> getByDate(
             @PathVariable UUID calendarId,
-            @RequestParam("start") LocalDate startDate,
-            @RequestParam("end") LocalDate endDate) {
+            @RequestParam(
+                    name = "start",
+                    required = false,
+                    defaultValue = "#{T(java.time.LocalDate).now()}") LocalDate startDate,
+            @RequestParam(
+                    name = "end",
+                    required = false,
+                    defaultValue = "#{T(java.time.LocalDate).now().plusYears(1)}") LocalDate endDate) {
         return  service.getByDateInterval(calendarId, startDate, endDate);
     }
 
     @PostMapping("{calendarId}/deviation")
     public Mono<Void> add(@RequestBody DeviationDto deviation, @PathVariable UUID calendarId) {
-        //deviation.setCalendarId(calendarId);
         return service.add(deviation, calendarId);
+    }
+
+    @DeleteMapping("/deviation/{id}")
+    public Mono<Void> delete(@PathVariable UUID id) {
+        return service.delete(id);
     }
 }
