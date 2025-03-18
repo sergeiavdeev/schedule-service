@@ -5,7 +5,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import ru.avdeev.scheduleservice.entity.Order;
+import ru.avdeev.scheduleservice.entity.Booking;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,18 +13,21 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface OrderRepository extends ReactiveCrudRepository<Order, UUID> {
+public interface BookingRepository extends ReactiveCrudRepository<Booking, UUID> {
 
     @Query(existsQuery)
-    Mono<Order> exists(UUID resourceId, LocalDate orderDate, LocalTime startTime, LocalTime endTime);
+    Mono<Booking> exists(UUID resourceId, LocalDate orderDate, LocalTime startTime, LocalTime endTime);
 
-    Flux<Order> findAllByResourceIdAndBookingDate(UUID resourceId, LocalDate bookingDate);
+    Flux<Booking> findAllByResourceIdAndBookingDate(UUID resourceId, LocalDate bookingDate);
 
     @Query(userQuery)
-    Flux<Order> findByUser(UUID userId);
+    Flux<Booking> findByUser(UUID userId);
 
     @Query(adminQuery)
-    Flux<Order> findAfterCurrentDate(List<UUID> userIds);
+    Flux<Booking> findAfterCurrentDate(List<UUID> userIds);
+
+    @Query(allQuery)
+    Flux<Booking> findByResourcesAfterCurrentDate(List<UUID> resourceIds);
 
     String existsQuery = """
             select *
@@ -51,6 +54,14 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, UUID> {
         where
             booking_date >= date(timezone('UTC+03', now()::timestamp)) and
             user_id in (:userIds)
+        order by booking_date, start_time
+    """;
+
+    String allQuery = """    
+        select * from booking
+        where
+            booking_date >= date(timezone('UTC+03', now()::timestamp)) and
+            resource_id in (:resourceIds)
         order by booking_date, start_time
     """;
 }

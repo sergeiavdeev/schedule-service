@@ -7,6 +7,6 @@ import java.util.UUID;
 
 @Data
 @AllArgsConstructor
-public class OrderCancelDto {
+public class BookingCancelDto {
     UUID id;
 }

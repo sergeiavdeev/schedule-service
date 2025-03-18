@@ -9,36 +9,42 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.configuration.RabbitConfig;
+import ru.avdeev.scheduleservice.dto.BookingDto;
 import ru.avdeev.scheduleservice.dto.DebtDto;
-import ru.avdeev.scheduleservice.dto.OrderDto;
 import ru.avdeev.scheduleservice.exception.ApiException;
-import ru.avdeev.scheduleservice.service.OrderService;
+import ru.avdeev.scheduleservice.service.BookingService;
 import ru.avdeev.scheduleservice.service.PriceService;
 import ru.avdeev.scheduleservice.service.impl.MessageService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/order")
 @RequiredArgsConstructor
 @Slf4j
-public class OrderController {
+public class BookingController {
 
-    private final OrderService orderService;
+    private final BookingService bookingService;
     private final PriceService priceService;
     private final MessageService messageService;
 
     @GetMapping("")
-    public Flux<OrderDto> getOrders(@RequestParam boolean admin, @AuthenticationPrincipal Jwt jwt) {
+    public Flux<BookingDto> getOrders(@RequestParam boolean admin, @AuthenticationPrincipal Jwt jwt) {
 
         if (jwt == null) {
             throw new ApiException(HttpResponseStatus.UNAUTHORIZED, "Unauthorized");
         }
         if (admin) {
-            return orderService.findAllAfterCurrentDate();
+            return bookingService.findAllAfterCurrentDate();
         }
         UUID userId = UUID.fromString(jwt.getClaim("sub").toString());
-        return orderService.findByUser(userId);
+        return bookingService.findByUser(userId);
+    }
+
+    @GetMapping("/all")
+    public Flux<BookingDto> getAllOrders(@RequestParam List<UUID> resources) {
+        return bookingService.findAllByResourcesAfterCurrentDate(resources);
     }
 
     @GetMapping("/price")
@@ -48,27 +54,27 @@ public class OrderController {
     }
 
     @PostMapping("")
-    public Mono<OrderDto> createOrder(@RequestBody OrderDto orderDto, @AuthenticationPrincipal Jwt jwt) {
-        log.info("Receive request: {}", orderDto);
+    public Mono<BookingDto> createOrder(@RequestBody BookingDto bookingDto, @AuthenticationPrincipal Jwt jwt) {
+        log.info("Receive request: {}", bookingDto);
         UUID userId = UUID.fromString(jwt.getClaim("sub").toString());
-        orderDto.setUserId(userId);
-        return orderService.save(orderDto)
+        bookingDto.setUserId(userId);
+        return bookingService.save(bookingDto)
                 .flatMap(order -> messageService.send("BookingCreated", RabbitConfig.BOOKING_EXCHANGE, order))
-                .map(o -> (OrderDto) o);
+                .map(o -> (BookingDto) o);
     }
 
     @PostMapping("/pay")
     public Mono<DebtDto> pay(@RequestBody DebtDto debt) {
-        return orderService.pay(debt.getOrderId(), debt.getKt())
+        return bookingService.pay(debt.getOrderId(), debt.getKt())
                 .flatMap(debtDto -> messageService.send("OrderPayed", RabbitConfig.BOOKING_EXCHANGE, debtDto))
                 .map(o -> (DebtDto) o);
     }
 
     @DeleteMapping
-    public Mono<OrderDto> deleteOrder(@RequestBody OrderDto orderDto) {
-        return orderService.findById(orderDto.getId())
-                .zipWith(orderService.deleteById(orderDto.getId()))
+    public Mono<BookingDto> deleteOrder(@RequestBody BookingDto bookingDto) {
+        return bookingService.findById(bookingDto.getId())
+                .zipWith(bookingService.deleteById(bookingDto.getId()))
                 .flatMap(t -> messageService.send("BookingCanceled", RabbitConfig.BOOKING_EXCHANGE, t.getT1()))
-                .map(o -> (OrderDto) o);
+                .map(o -> (BookingDto) o);
     }
 }

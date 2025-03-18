@@ -8,13 +8,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.*;
 import ru.avdeev.scheduleservice.exception.ResourceNotFoundException;
-import ru.avdeev.scheduleservice.mapper.OrderMapper;
-import ru.avdeev.scheduleservice.repository.OrderRepository;
+import ru.avdeev.scheduleservice.mapper.BookingMapper;
+import ru.avdeev.scheduleservice.repository.BookingRepository;
 import ru.avdeev.scheduleservice.service.CalendarService;
 import ru.avdeev.scheduleservice.service.DeviationService;
 import ru.avdeev.scheduleservice.service.WorkTimeService;
 
-import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -29,8 +28,8 @@ public class WorkTimeServiceImpl implements WorkTimeService {
 
     private final CalendarService calendarService;
     private final DeviationService deviationService;
-    private final OrderRepository orderRepository;
-    private final OrderMapper orderMapper;
+    private final BookingRepository bookingRepository;
+    private final BookingMapper bookingMapper;
 
     @Override
     public Mono<WorkTimeDto> getWorkTime(UUID ownerId, LocalDate startDate, LocalDate endDate) {
@@ -71,7 +70,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
     public Mono<WorkTimeDto> getFreeWorkTime(UUID storageId, UUID resourceId, LocalDate date) {
         return getWorkTime(storageId, date, date)
                 .map(workTimeDto -> workTimeDto.getDateWorkTimeList().getFirst().getTimeIntervals())
-                .zipWith(orderRepository.findAllByResourceIdAndBookingDate(resourceId, date).map(orderMapper::toDto).collectList())
+                .zipWith(bookingRepository.findAllByResourceIdAndBookingDate(resourceId, date).map(bookingMapper::toDto).collectList())
                 .map(t -> concatIntervals(t.getT1(), t.getT2()))
                 .map(timeIntervals -> {
                     DateWorkTimeDto dateWorkTimeDto = new DateWorkTimeDto(date, date.getDayOfWeek().getValue(), timeIntervals);
@@ -116,7 +115,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
 
         return dateWorkTime;
     }
-    private List<TimeIntervalDto> concatIntervals(List<TimeIntervalDto> free, List<OrderDto> busy) {
+    private List<TimeIntervalDto> concatIntervals(List<TimeIntervalDto> free, List<BookingDto> busy) {
 
         busy.sort((el1, el2) -> {
             if (el1.getStartTime().isBefore(el2.getStartTime())) {
@@ -129,7 +128,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
 
         ArrayList<TimeIntervalDto> result = new ArrayList<>();
         free.forEach(freeInterval -> {
-            List<OrderDto> busyIntervals = busy.stream()
+            List<BookingDto> busyIntervals = busy.stream()
                     .filter(el ->
                             (el.getEndTime().isBefore(freeInterval.getEndTime()) ||
                                     el.getEndTime().equals(freeInterval.getEndTime()))
@@ -141,7 +140,7 @@ public class WorkTimeServiceImpl implements WorkTimeService {
 
             LocalTime startTime = freeInterval.getStartTime();
 
-            for (OrderDto busyInterval : busyIntervals) {
+            for (BookingDto busyInterval : busyIntervals) {
                 result.add(new TimeIntervalDto(startTime, busyInterval.getStartTime()));
                 startTime = busyInterval.getEndTime();
             }

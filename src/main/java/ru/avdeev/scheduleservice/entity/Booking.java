@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Table("booking")
-public record Order(
+public record Booking(
         @Id
         UUID id,
 

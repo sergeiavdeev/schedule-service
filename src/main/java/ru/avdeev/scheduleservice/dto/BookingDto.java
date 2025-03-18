@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class OrderDto {
+public class BookingDto {
     private UUID id;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private UUID storageId;

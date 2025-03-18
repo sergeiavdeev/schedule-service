@@ -11,79 +11,77 @@ import reactor.core.publisher.Mono;
 import ru.avdeev.scheduleservice.dto.*;
 import ru.avdeev.scheduleservice.exception.InvalidTimeIntervalException;
 import ru.avdeev.scheduleservice.mapper.DebtMapper;
-import ru.avdeev.scheduleservice.mapper.OrderMapper;
-import ru.avdeev.scheduleservice.repository.OrderRepository;
-import ru.avdeev.scheduleservice.service.DebtService;
-import ru.avdeev.scheduleservice.service.OrderService;
-import ru.avdeev.scheduleservice.service.PriceService;
-import ru.avdeev.scheduleservice.service.WorkTimeService;
+import ru.avdeev.scheduleservice.mapper.BookingMapper;
+import ru.avdeev.scheduleservice.repository.BookingRepository;
+import ru.avdeev.scheduleservice.service.*;
 
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class OrderServiceImpl implements OrderService {
+public class BookingServiceImpl implements BookingService {
 
-    private final OrderRepository orderRepository;
+    private final BookingRepository bookingRepository;
     private final DebtService debtService;
     private final PriceService priceService;
-    private final OrderMapper orderMapper;
+    private final BookingMapper bookingMapper;
     private final DebtMapper debtMapper;
     private final WorkTimeService workTimeService;
     private final Keycloak keycloak;
     //private final MessageService messageService;
+    private final UserService userService;
 
     @Override
     @Transactional
-    public Mono<OrderDto> save(OrderDto orderDto) {
+    public Mono<BookingDto> save(BookingDto bookingDto) {
 
-        if (orderDto.getStartTime().isAfter(orderDto.getEndTime()) ||
-                orderDto.getStartTime().equals(orderDto.getEndTime())) {
+        if (bookingDto.getStartTime().isAfter(bookingDto.getEndTime()) ||
+                bookingDto.getStartTime().equals(bookingDto.getEndTime())) {
             String msg = String.format("Дата начала интервала %s должна быть меньше даты окончания %s",
-                    orderDto.getStartTime(),
-                    orderDto.getEndTime()
+                    bookingDto.getStartTime(),
+                    bookingDto.getEndTime()
             );
             throw new InvalidTimeIntervalException(msg);
         }
 
-        return isWorkTime(orderDto)
+        return isWorkTime(bookingDto)
                 .flatMap(isWorkTime -> {
                     if (isWorkTime) {
-                        return  orderRepository.exists(
-                                        orderDto.getResourceId(),
-                                        orderDto.getBookingDate(),
-                                        orderDto.getStartTime(),
-                                        orderDto.getEndTime()
+                        return  bookingRepository.exists(
+                                        bookingDto.getResourceId(),
+                                        bookingDto.getBookingDate(),
+                                        bookingDto.getStartTime(),
+                                        bookingDto.getEndTime()
                                 )
                                 .doOnNext(order -> {
                                     String msg = String.format("Желаемое время уже занято: %s - %s",
-                                            orderDto.getStartTime(),
-                                            orderDto.getEndTime()
+                                            bookingDto.getStartTime(),
+                                            bookingDto.getEndTime()
                                     );
                                     throw new InvalidTimeIntervalException(msg);
                                 })
-                                .switchIfEmpty(orderRepository.save(orderMapper.toEntity(orderDto)))
-                                .map(orderMapper::toDto)
+                                .switchIfEmpty(bookingRepository.save(bookingMapper.toEntity(bookingDto)))
+                                .map(bookingMapper::toDto)
                                 .flatMap(this::saveDebt)
                                 //.flatMap(order -> messageService.send("BookingCreated", "exch.booking", order))
                                 //.map(o -> (OrderDto) o)
                                 ;
                     }
                     String msg = String.format("Желаемое время не соответствует рабочему времени: %s - %s",
-                            orderDto.getStartTime(),
-                            orderDto.getEndTime()
+                            bookingDto.getStartTime(),
+                            bookingDto.getEndTime()
                         );
                     return Mono.error(new InvalidTimeIntervalException(msg));
                 });
     }
 
     @Override
-    public Flux<OrderDto> findAll() {
+    public Flux<BookingDto> findAll() {
 
         List<UserRepresentation> users = keycloak.realm("ttc-tops").users().list();
 
-        return orderRepository.findAll()
-                .map(orderMapper::toDto)
+        return bookingRepository.findAll()
+                .map(bookingMapper::toDto)
                 .map(orderDto -> {
                             users.stream()
                                     .filter(el -> el.getId().equals(orderDto.getUserId().toString()))
@@ -100,21 +98,21 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<OrderDto> findById(UUID id) {
-        return orderRepository.findById(id)
-                .map(orderMapper::toDto);
+    public Mono<BookingDto> findById(UUID id) {
+        return bookingRepository.findById(id)
+                .map(bookingMapper::toDto);
     }
 
     @Override
-    public Flux<OrderDto> findByUser(UUID userId) {
-        return orderRepository.findByUser(userId)
-                .map(orderMapper::toDto)
+    public Flux<BookingDto> findByUser(UUID userId) {
+        return bookingRepository.findByUser(userId)
+                .map(bookingMapper::toDto)
                 .flatMapSequential(this::setDebt)
                 .flatMapSequential(this::setAmount);
     }
 
     @Override
-    public Flux<OrderDto> findAllAfterCurrentDate() {
+    public Flux<BookingDto> findAllAfterCurrentDate() {
 
         List<UserRepresentation> users = keycloak.realm("ttc-tops").users().list();
 
@@ -122,8 +120,8 @@ public class OrderServiceImpl implements OrderService {
                 .map(el -> UUID.fromString(el.getId()))
                 .toList();
 
-        return orderRepository.findAfterCurrentDate(usersIds)
-                .map(orderMapper::toDto)
+        return bookingRepository.findAfterCurrentDate(usersIds)
+                .map(bookingMapper::toDto)
                 .map(orderDto -> {
                             users.stream()
                                     .filter(el -> el.getId().equals(orderDto.getUserId().toString()))
@@ -144,7 +142,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Mono<UUID> deleteById(UUID id) {
-        return orderRepository.deleteById(id)
+        return bookingRepository.deleteById(id)
                 .then(debtService.deleteByOrderId(id))
                 .then(Mono.just(id));
     }
@@ -155,7 +153,16 @@ public class OrderServiceImpl implements OrderService {
                 .map(debtMapper::toDto);
     }
 
-    private Mono<Boolean> isWorkTime(OrderDto order) {
+    @Override
+    public Flux<BookingDto> findAllByResourcesAfterCurrentDate(List<UUID> resources) {
+        return bookingRepository.findByResourcesAfterCurrentDate(resources)
+                .map(bookingMapper::toDto)
+                .flatMapSequential(this::setUser)
+                .flatMapSequential(this::setDebt)
+                .flatMapSequential(this::setAmount);
+    }
+
+    private Mono<Boolean> isWorkTime(BookingDto order) {
 
         return workTimeService.getWorkTime(order.getStorageId(), order.getBookingDate(), order.getBookingDate())
                 .map(workTimeDto -> {
@@ -174,31 +181,40 @@ public class OrderServiceImpl implements OrderService {
                 });
     }
 
-    private Mono<OrderDto> saveDebt(OrderDto orderDto) {
+    private Mono<BookingDto> saveDebt(BookingDto bookingDto) {
 
-        return priceService.getAmount(orderDto.getResourceId(), orderDto.getCount())
-                .flatMap(amount -> debtService.saveDebt(orderDto.getId(), amount, 0D))
+        return priceService.getAmount(bookingDto.getResourceId(), bookingDto.getCount())
+                .flatMap(amount -> debtService.saveDebt(bookingDto.getId(), amount, 0D))
                 .map(debt -> {
-                    orderDto.setAmount(debt.dt());
-                    return orderDto;
+                    bookingDto.setAmount(debt.dt());
+                    return bookingDto;
                 });
     }
 
-    private Mono<OrderDto> setDebt(OrderDto orderDto) {
+    private Mono<BookingDto> setDebt(BookingDto bookingDto) {
 
-        return debtService.getDebt(orderDto.getId())
+        return debtService.getDebt(bookingDto.getId())
                 .map(debt -> {
-                    orderDto.setDebt(debt);
-                    return orderDto;
+                    bookingDto.setDebt(debt);
+                    return bookingDto;
                 });
     }
 
-    private Mono<OrderDto> setAmount(OrderDto orderDto) {
+    private Mono<BookingDto> setAmount(BookingDto bookingDto) {
 
-        return debtService.getAmount(orderDto.getId())
+        return debtService.getAmount(bookingDto.getId())
                 .map(amount -> {
-                    orderDto.setAmount(amount);
-                    return orderDto;
+                    bookingDto.setAmount(amount);
+                    return bookingDto;
+                });
+    }
+
+    private Mono<BookingDto> setUser(BookingDto bookingDto) {
+
+        return userService.findById(bookingDto.getUserId())
+                .map(user -> {
+                    bookingDto.setUser(user);
+                    return bookingDto;
                 });
     }
 }
